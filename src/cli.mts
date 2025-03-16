@@ -73,7 +73,7 @@ async function runReview() {
   let totalErrors = 0;
   for (const result of allResults) {
     console.log(`result.issues=`, result.issues);
-    totalErrors += result.issues.filter(i => i.severity === '高' || i.severity === '中').length;
+    totalErrors += result.issues.filter(i => ['高', '中', '低'].includes(i.severity)).length;
   }
 
   // 根据高危问题数量设置退出码
