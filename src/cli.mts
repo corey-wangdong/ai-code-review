@@ -69,6 +69,17 @@ async function runReview() {
   console.log('\n=== 审查总结 ===');
   console.log(`共审查 ${files.length} 个文件`);
   console.log(`发现 ${allResults.reduce((sum, r) => sum + r.issues.length, 0)} 个问题`);
+
+  let totalErrors = 0;
+  for (const result of allResults) {
+    totalErrors += result.issues.filter(i => i.severity === '高').length;
+  }
+
+  // 根据高危问题数量设置退出码
+  if (totalErrors > 0) {
+    console.error(`发现 ${totalErrors} 个高危问题，请修复后重试`);
+    process.exit(1); // 非零退出码使工作流失败
+  }
 }
 
 runReview().catch(console.error);
