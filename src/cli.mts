@@ -72,6 +72,7 @@ async function runReview() {
 
   let totalErrors = 0;
   for (const result of allResults) {
+    console.log(`result.issues=`, result.issues);
     totalErrors += result.issues.filter(i => i.severity === '高' || i.severity === '中').length;
   }
 
