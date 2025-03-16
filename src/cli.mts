@@ -25,7 +25,7 @@ function getChangedFiles(): string[] {
       .filter(f => ['.ts', '.tsx', '.js'].some(ext => f.endsWith(ext)));
 
     return output;
-  } catch (error) {
+  } catch (error: any) {
     console.log('获取变更文件失败:', error.message);
     return [];
   }
@@ -60,7 +60,7 @@ async function runReview() {
         `review-${Date.now()}.json`,
         JSON.stringify(result, null, 2)
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ ${file} 审查失败:`, error.message);
     }
   }
