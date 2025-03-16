@@ -1,49 +1,31 @@
+# .github/workflows/code-review.yml
 name: Code Review
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
+on: [pull_request]
 
 jobs:
   review:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      actions: write  # 新增权限
-
     steps:
-      - name: Checkout code
+      - name: 检出代码
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}  # 明确指定检查的提交
+          fetch-depth: 2  # 必须设置才能获取变更文件
 
-      - name: Debug Information
-        run: |
-          echo "当前目录: $(pwd)"
-          echo "变更文件: $(git diff --name-only HEAD^ HEAD || echo '无变更')"
-
-      - name: Setup Node.js
+      - name: 安装 Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: 'npm'
 
-      - name: Install dependencies
+      - name: 安装依赖
         run: npm ci
 
-      - name: Run Code Review
+      - name: 执行代码审查
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: |
-          echo "NODE_ENV: $NODE_ENV"
-          npm start
+        run: npx ts-node src/cli.ts
 
-      - name: Upload Report
+      - name: 上传结果
         uses: actions/upload-artifact@v4
         with:
-          name: code-review-report
-          path: |
-            review-*.json
-            node_modules/.cache/tsx/*
+          name: code-review-results
+          path: review-results.json
