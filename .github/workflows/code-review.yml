@@ -25,7 +25,7 @@ jobs:
           echo "变更文件: $(git diff --name-only HEAD^ HEAD || echo '无变更')"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: 'npm'
@@ -41,7 +41,7 @@ jobs:
           npm start
 
       - name: Upload Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: code-review-report
           path: |
