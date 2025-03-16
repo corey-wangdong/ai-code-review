@@ -1,14 +1,27 @@
-// src/code-review-tool.mts
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import axios from 'axios';
 
+interface CodeReviewIssue {
+  type: '代码风格' | '性能问题' | '潜在错误' | '安全风险';
+  description: string;
+  line: number;
+  severity: '低' | '中' | '高';
+  suggestion: string;
+}
+
+interface CodeReviewResult {
+  issues: CodeReviewIssue[];
+  summary: string;
+  score?: number;
+}
+
 export const codeReviewTool = createTool({
   id: 'code-review',
-  description: 'DeepSeek 代码审查工具',
+  description: 'Perform automated code review using DeepSeek API',
   inputSchema: z.object({
     code: z.string().describe('需要审查的代码内容'),
-    fileType: z.enum(['ts', 'tsx', 'js']).describe('文件类型')
+    fileType: z.string().describe('文件类型 (e.g. ts, tsx, js)')
   }),
   outputSchema: z.object({
     issues: z.array(
@@ -21,33 +34,31 @@ export const codeReviewTool = createTool({
       })
     ),
     summary: z.string(),
-    score: z.number().min(0).max(100)
+    score: z.number().optional()
   }),
-  execute: async ({ input }: any) => {
+  execute: async ({ input }) => {
     try {
+      const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
       const response = await axios.post(
         'https://api.deepseek.com/v1/chat/completions',
         {
           model: "deepseek-coder",
           messages: [{
             role: "user",
-            content: `执行严格代码审查（${input.fileType}）：
+            content: `严格审查以下${input.fileType}代码：
 ${input.code}
 
-输出要求：
-- 按行号指出问题
-- 按严重性排序
-- JSON格式：
+请按照以下格式返回JSON结果：
 {
   "issues": [{
-    "type": "问题类型",
-    "description": "具体描述",
+    "type": "代码风格/性能问题/潜在错误/安全风险",
+    "description": "问题描述",
     "line": 行号,
-    "severity": "严重等级",
-    "suggestion": "修复建议"
+    "severity": "低/中/高",
+    "suggestion": "优化建议"
   }],
-  "summary": "审查摘要",
-  "score": 健康评分
+  "summary": "总体评估摘要",
+  "score": 代码健康度评分(1-100)
 }`
           }],
           temperature: 0.2,
@@ -55,28 +66,26 @@ ${input.code}
         },
         {
           headers: {
-            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
             'Content-Type': 'application/json'
           }
         }
       );
 
-      const rawData = JSON.parse(response.data.choices[0].message.content);
-
-      // 数据清洗
+      const result = JSON.parse(response.data.choices[0].message.content);
       return {
-        issues: rawData.issues.map(issue => ({
+        issues: result.issues.map((issue: any) => ({
           ...issue,
           line: Number(issue.line) || 0
         })),
-        summary: rawData.summary || '未提供摘要',
-        score: Math.min(Math.max(rawData.score || 80, 0), 100)
+        summary: result.summary,
+        score: result.score
       };
     } catch (error) {
-      console.error('DeepSeek API 错误:', error.response?.data || error.message);
+      console.error('Code review failed:', error);
       return {
         issues: [],
-        summary: '审查服务暂时不可用',
+        summary: '代码审查服务暂不可用',
         score: 0
       };
     }
